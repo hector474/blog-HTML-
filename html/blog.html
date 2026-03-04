@@ -1,23 +1,80 @@
 <!DOCTYPE html>
-<html>
-    <head>
-        <title>Blog</title>
-        <link rel="stylesheet" href="blog-HTML-\css\blog.css">
-    </head>
-    <body>
-        <h1>Mi blog de Ingeniería</h1>
-        <p>Este es mi blog de ingeniería</p>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor Académico Personalizado</title>
+    <link rel="stylesheet" href="../css/blog.css">
+</head>
+<body>
+    <div id="scroll-indicator"></div>
 
-        <div>
-            <a href="#1" class="btn">Primer Semestre</a>
-            <a href="#2" class="btn">Segundo Semestre</a>
-            <a href="#3" class="btn">Tercer Semestre</a>
-            <a href="#4" class="btn">Cuarto Semestre</a>
-            <a href="#5" class="btn">Quinto Semestre</a>
-            <a href="#6" class="btn">Sexto Semestre</a>
-            <a href="#7" class="btn">Séptimo Semestre</a>
-            <a href="#8" class="btn">Octavo Semestre</a>
+    <div class="container">
+        <h1>Mi blog de Ingeniería</h1>
+        <p>Gestión personalizada de asignaturas y evaluación continua.</p>
+
+        <div class="semestres-container">
+            <button class="btn-sem" onclick="showSemester(1)">1º Sem</button>
+            <button class="btn-sem" onclick="showSemester(2)">2º Sem</button>
+            <button class="btn-sem" onclick="showSemester(3)">3º Sem</button>
+            <button class="btn-sem" onclick="showSemester(4)">4º Sem</button>
+            <button class="btn-sem" onclick="showSemester(5)">5º Sem</button>
+            <button class="btn-sem" onclick="showSemester(6)">6º Sem</button>
+            <button class="btn-sem" onclick="showSemester(7)">7º Sem</button>
+            <button class="btn-sem" onclick="showSemester(8)">8º Sem</button>
         </div>
-        
-    </body>
+
+        <div id="semester-panel" class="panel" style="display:none;">
+            <h3 id="panel-title">Selecciona un semestre</h3>
+            
+            <div id="subject-list"></div>
+            
+            <div class="add-subject-area">
+                <h4>Matricular Nueva Asignatura</h4>
+                <input type="text" id="new-subject-name" placeholder="Nombre de la asignatura">
+                <div class="percentage-inputs">
+                    <input type="number" id="perc-exam" placeholder="% Examen" min="0" max="100">
+                    <input type="number" id="perc-trabajo" placeholder="% Trabajos" min="0" max="100">
+                    <input type="number" id="perc-cont" placeholder="% Ev. Cont." min="0" max="100">
+                </div>
+                <button class="btn" onclick="addCustomSubject()">Añadir a este semestre</button>
+            </div>
+        </div>
+
+        <div class="comments-section">
+            <h2>Notas de Estudio</h2>
+            <form id="comment-form">
+                <input type="text" id="user-name" placeholder="Tu nombre" required>
+                <textarea id="comment-text" placeholder="Anota algo importante..." required></textarea>
+                <button type="submit" class="btn">Publicar</button>
+            </form>
+            <div id="comments-display"></div>
+        </div>
+
+        <button id="theme-toggle" class="btn-theme">☀️ Cambiar Vista</button>
+    </div>
+
+    <div id="reschedule-modal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <h4>Mover Asignatura</h4>
+            <p id="suspense-msg"></p>
+            <select id="target-semester">
+                <option value="1">Semestre 1</option>
+                <option value="2">Semestre 2</option>
+                <option value="3">Semestre 3</option>
+                <option value="4">Semestre 4</option>
+                <option value="5">Semestre 5</option>
+                <option value="6">Semestre 6</option>
+                <option value="7">Semestre 7</option>
+                <option value="8">Semestre 8</option>
+            </select>
+            <div style="margin-top: 20px;">
+                <button class="btn" onclick="confirmReschedule()">Confirmar</button>
+                <button class="btn btn-red" onclick="closeModal()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../script/script.js"></script>
+</body>
 </html>
