@@ -1,175 +1,162 @@
-// ========================================
-// GESTOR ACADÉMICO - JAVASCRIPT PRINCIPAL
-// Scroll indicator + Calculadora notas
-// ========================================
+let libros = JSON.parse(localStorage.getItem('libros')) || [];
+let editandoIndex = -1;
+let filtroIdioma = 'todo';
+let chartInstance = null;
 
-document.addEventListener('DOMContentLoaded', function() {
-    
-    // SCROLL INDICATOR (para blog.html)
-    if (document.getElementById('scroll-indicator')) {
-        initScrollIndicator();
-    }
-    
-    // CALCULADORA DE NOTAS (para curso1.html y similares)
-    if (document.getElementById('miTabla')) {
-        initCalculadoraNotas();
-    }
-    
-});
+// --- FUNCIONES DE RENDERIZADO ---
+function renderizarLibros(term = "") {
+    const tbody = document.getElementById('tbodyLibros');
+    tbody.innerHTML = '';
 
-// SCROLL INDICATOR (barra progreso en navbar)
-function initScrollIndicator() {
-    const indicator = document.getElementById('scroll-indicator');
-    
-    window.addEventListener('scroll', () => {
-        const scrollTop = window.pageYOffset;
-        const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-        const scrollPercent = (scrollTop / docHeight) * 100;
-        
-        indicator.style.width = scrollPercent + '%';
-        indicator.style.opacity = scrollPercent / 100;
+    const filtrados = libros.filter(l =>
+        (l.nombre.toLowerCase().includes(term) || l.autor.toLowerCase().includes(term)) &&
+        (filtroIdioma === 'todo' || l.idioma === filtroIdioma)
+    );
+
+    filtrados.forEach((libro) => {
+        const indexReal = libros.indexOf(libro);
+        const badgeColor = libro.vecesLeido > 0 ? '#10b981' : '#94a3b8';
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><strong>${libro.nombre}</strong></td>
+            <td>${libro.autor}</td>
+            <td>${getFlag(libro.idioma)} ${libro.idioma}</td>
+            <td>${libro.paginas}</td>
+            <td><span class="read-badge" style="background:${badgeColor}">${libro.vecesLeido}x</span></td>
+            <td>
+                <button onclick="editarLibro(${indexReal})" style="background:none">✏️</button>
+                <button onclick="borrarLibro(${indexReal})" style="background:none">🗑️</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
     });
+
+    document.getElementById('emptyState').style.display = filtrados.length ? 'none' : 'block';
+    actualizarStats();
 }
 
-// CALCULADORA DE NOTAS PONDERADAS
-function initCalculadoraNotas() {
-    const tabla = document.getElementById('miTabla');
-    const btnNuevaFila = document.getElementById('btn-nueva-fila');
-    const totalNota = document.getElementById('total-nota');
-    const avisoPorcentaje = document.getElementById('aviso-porcentaje');
-    
-    // Cargar datos desde localStorage
-    cargarDatosLocalStorage();
-    
-    // Event listeners
-    btnNuevaFila.addEventListener('click', añadirFila);
-    
-    // Recalcular al cambiar cualquier input
-    tabla.addEventListener('input', calcularNotaFinal);
-    
-    // Eliminar fila (ya definida en HTML onclick)
-    
-    function añadirFila() {
-        const tbody = tabla.querySelector('tbody');
-        const nuevaFila = tbody.insertRow();
-        
-        // Celda nombre
-        const celdaNombre = nuevaFila.insertCell();
-        celdaNombre.innerHTML = `<input type="text" class="nombre-input" value="Nueva actividad">`;
-        
-        // Celda porcentaje
-        const celdaPct = nuevaFila.insertCell();
-        celdaPct.innerHTML = `<input type="number" class="pct-input" value="0" min="0" max="100">`;
-        
-        // Celda nota
-        const celdaNota = nuevaFila.insertCell();
-        celdaNota.innerHTML = `<input type="number" class="nota-input" value="0" min="0" max="10" step="0.1">`;
-        
-        // Celda eliminar
-        const celdaAccion = nuevaFila.insertCell();
-        celdaAccion.innerHTML = `<button class="btn-eliminar" onclick="eliminarFila(this)">❌</button>`;
-        
-        // Recalcular
-        calcularNotaFinal();
-        guardarDatosLocalStorage();
+function getFlag(code) {
+    const flags = { ES: '🇪🇸', EN: '🇺🇸', FR: '🇫🇷', DE: '🇩🇪', OT: '🌐' };
+    return flags[code] || '📖';
+}
+
+// --- GESTIÓN DE DATOS ---
+function guardarLibro() {
+    const libro = {
+        nombre: document.getElementById('nombreLibro').value.trim(),
+        autor: document.getElementById('autorLibro').value.trim(),
+        paginas: parseInt(document.getElementById('paginasLibro').value) || 0,
+        capitulos: parseInt(document.getElementById('capitulosLibro').value) || 0,
+        idioma: document.getElementById('idiomaLibro').value,
+        vecesLeido: parseInt(document.getElementById('vecesLeidoLibro').value) || 0
+    };
+
+    if (!libro.nombre || !libro.autor) return alert("Rellena Título y Autor");
+
+    if (editandoIndex > -1) {
+        libros[editandoIndex] = libro;
+    } else {
+        libros.push(libro);
     }
-    
-    function eliminarFila(btn) {
-        if (confirm('¿Eliminar esta actividad?')) {
-            btn.closest('tr').remove();
-            calcularNotaFinal();
-            guardarDatosLocalStorage();
-        }
+
+    localStorage.setItem('libros', JSON.stringify(libros));
+    ocultarFormulario();
+    renderizarLibros();
+}
+
+function borrarLibro(idx) {
+    if (confirm("¿Eliminar este libro?")) {
+        libros.splice(idx, 1);
+        localStorage.setItem('libros', JSON.stringify(libros));
+        renderizarLibros();
     }
-    
-    function calcularNotaFinal() {
-        let sumaPorcentajes = 0;
-        let sumaPonderada = 0;
-        let filasValidas = 0;
-        
-        const filas = tabla.querySelectorAll('tbody tr');
-        
-        filas.forEach(fila => {
-            const pctInput = fila.querySelector('.pct-input');
-            const notaInput = fila.querySelector('.nota-input');
-            
-            const porcentaje = parseFloat(pctInput.value) || 0;
-            const nota = parseFloat(notaInput.value) || 0;
-            
-            if (porcentaje > 0 && nota >= 0) {
-                sumaPorcentajes += porcentaje;
-                sumaPonderada += (porcentaje * nota);
-                filasValidas++;
+}
+
+function editarLibro(idx) {
+    const l = libros[idx];
+    document.getElementById('nombreLibro').value = l.nombre;
+    document.getElementById('autorLibro').value = l.autor;
+    document.getElementById('paginasLibro').value = l.paginas;
+    document.getElementById('capitulosLibro').value = l.capitulos;
+    document.getElementById('idiomaLibro').value = l.idioma;
+    document.getElementById('vecesLeidoLibro').value = l.vecesLeido;
+
+    editandoIndex = idx;
+    document.getElementById('formTitle').innerText = "✏️ Editando Libro";
+    mostrarFormulario();
+}
+
+// --- FILTROS Y BUSQUEDA ---
+function filtrarBusqueda() {
+    renderizarLibros(document.getElementById('searchInput').value.toLowerCase());
+}
+
+function toggleFiltro() {
+    const opciones = ['todo', 'ES', 'EN', 'FR', 'DE', 'OT'];
+    let current = opciones.indexOf(filtroIdioma);
+    filtroIdioma = opciones[(current + 1) % opciones.length];
+    document.getElementById('filtroActual').innerText = filtroIdioma.toUpperCase();
+    renderizarLibros();
+}
+
+// --- IMPORTAR / EXPORTAR ---
+function exportar() {
+    const data = JSON.stringify(libros, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'mi_biblioteca.json';
+    a.click();
+}
+
+function importarArchivo(event) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            libros = JSON.parse(e.target.result);
+            localStorage.setItem('libros', JSON.stringify(libros));
+            renderizarLibros();
+        } catch (err) { alert("Archivo no válido"); }
+    };
+    reader.readAsText(event.target.files[0]);
+}
+
+// --- GRÁFICO ---
+function toggleChart() {
+    const canvas = document.getElementById('chartSection');
+    canvas.style.display = canvas.style.display === 'none' ? 'block' : 'none';
+    if (canvas.style.display === 'block') {
+        if (chartInstance) chartInstance.destroy();
+        const ctx = document.getElementById('librosChart').getContext('2d');
+        chartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: libros.slice(-5).map(l => l.nombre),
+                datasets: [{
+                    label: 'Páginas',
+                    data: libros.slice(-5).map(l => l.paginas),
+                    backgroundColor: '#6366f1'
+                }]
             }
         });
-        
-        // Nota final (ponderada)
-        const notaFinal = filasValidas > 0 ? (sumaPonderada / sumaPorcentajes).toFixed(2) : 0;
-        
-        // Actualizar UI
-        totalNota.textContent = notaFinal;
-        
-        // Validar porcentaje total
-        if (sumaPorcentajes === 100) {
-            totalNota.style.color = '#10b981'; // Verde
-            avisoPorcentaje.textContent = '✅ Porcentaje correcto (100%)';
-            avisoPorcentaje.style.color = '#10b981';
-        } else if (sumaPorcentajes > 0) {
-            totalNota.style.color = '#f59e0b'; // Naranja
-            avisoPorcentaje.textContent = `⚠️ Suma porcentajes: ${sumaPorcentajes.toFixed(0)}% (debe ser 100%)`;
-            avisoPorcentaje.style.color = '#f59e0b';
-        } else {
-            totalNota.style.color = '#6b7280'; // Gris
-            avisoPorcentaje.textContent = 'Añade actividades con % > 0';
-            avisoPorcentaje.style.color = '#6b7280';
-        }
-        
-        // Calificación cualitativa
-        if (notaFinal >= 9) totalNota.textContent += ' (Sobresaliente)';
-        else if (notaFinal >= 7) totalNota.textContent += ' (Notable)';
-        else if (notaFinal >= 5) totalNota.textContent += ' (Aprobado)';
-        else if (notaFinal >= 0) totalNota.textContent += ' (Suspenso)';
     }
-    
-    // LOCALSTORAGE: Guardar/Cargar datos
-    function guardarDatosLocalStorage() {
-        const filas = [];
-        document.querySelectorAll('tbody tr').forEach(fila => {
-            const nombre = fila.querySelector('.nombre-input').value;
-            const pct = fila.querySelector('.pct-input').value;
-            const nota = fila.querySelector('.nota-input').value;
-            filas.push({ nombre, pct, nota });
-        });
-        localStorage.setItem('notasCurso1', JSON.stringify(filas));
-    }
-    
-    function cargarDatosLocalStorage() {
-        const datos = localStorage.getItem('notasCurso1');
-        if (datos) {
-            const filas = JSON.parse(datos);
-            filas.forEach((filaData, index) => {
-                if (index === 0) {
-                    // Actualizar fila existente
-                    document.querySelector('.nombre-input').value = filaData.nombre;
-                    document.querySelector('.pct-input').value = filaData.pct;
-                    document.querySelector('.nota-input').value = filaData.nota;
-                } else {
-                    // Añadir nuevas filas
-                    añadirFila();
-                    const nuevaFila = document.querySelectorAll('tbody tr')[index];
-                    nuevaFila.querySelector('.nombre-input').value = filaData.nombre;
-                    nuevaFila.querySelector('.pct-input').value = filaData.pct;
-                    nuevaFila.querySelector('.nota-input').value = filaData.nota;
-                }
-            });
-            calcularNotaFinal();
-        }
-    }
-    
-    // Inicializar cálculo
-    calcularNotaFinal();
 }
 
-// Hacer funciones globales (para onclick en HTML)
-window.eliminarFila = eliminarFila;
-window.añadirFila = añadirFila;
+// --- UI ---
+function mostrarFormulario() { document.getElementById('formOverlay').style.display = 'grid'; }
+function ocultarFormulario() {
+    document.getElementById('formOverlay').style.display = 'none';
+    editandoIndex = -1;
+    document.getElementById('formTitle').innerText = "📖 Nuevo Libro";
+    document.querySelectorAll('.field input').forEach(i => i.value = "");
+}
+
+function actualizarStats() {
+    document.getElementById('headerTotal').innerText = `${libros.length} libros`;
+    const paginas = libros.reduce((s, l) => s + l.paginas, 0);
+    document.getElementById('headerPaginas').innerText = `${paginas.toLocaleString()} pág`;
+}
+
+document.addEventListener('DOMContentLoaded', () => renderizarLibros());

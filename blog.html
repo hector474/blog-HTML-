@@ -4,33 +4,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestor Académico Personalizado</title>
+    <title>LibraryPro v2.0</title>
     <link rel="stylesheet" href="blog.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
-    <div id="scroll-indicator"></div>
-
-    <div class="navbar">
-        <a href="blog.html">Home</a>
-        <a href="https://ingenierias.unileon.es/horario-semanal-2025-2026/1-ing-informatica-b/" target="_blank">Schedule</a>
-        <div class="dropdown">
-            <button class="dropbtn">Dropdown
-                <i class="fa fa-caret-down"></i>
-            </button>
-            <div class="dropdown-content">
-                <a href="cursos/curso1.html">Curso 1</a>
-                <a href="cursos/curso2.html">Curso 2</a>
-                <a href="cursos/curso3.html">Curso 3</a>
-                <a href="cursos/curso4.html">Curso 4</a>
+    <div class="container">
+        <div class="header">
+            <h1>Elite Library Manager</h1>
+            <div class="quick-stats">
+                <span id="headerTotal">0 libros</span> | <span id="headerPaginas">0 pág</span>
             </div>
         </div>
-        <a href ></a>
+
+        <div class="dashboard-controls">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Buscar título o autor..." onkeyup="filtrarBusqueda()">
+            </div>
+            <div class="action-buttons">
+                <button onclick="mostrarFormulario()" class="btn-add">➕ Nuevo</button>
+                <button onclick="toggleFiltro()" class="btn-filter">🌐 <span id="filtroActual">Todo</span></button>
+                <button onclick="toggleChart()" class="btn-chart">📈 Gráfico</button>
+                <button onclick="exportar()" class="btn-export">💾 Exportar</button>
+                <button onclick="document.getElementById('importInput').click()" class="btn-import">📥 Importar</button>
+                <input type="file" id="importInput" style="display:none" onchange="importarArchivo(event)">
+            </div>
+        </div>
+
+        <div id="chartSection" class="chart-wrapper" style="display:none;">
+            <canvas id="librosChart"></canvas>
+        </div>
+
+        <div class="table-responsive">
+            <table id="librosTable">
+                <thead>
+                    <tr>
+                        <th onclick="ordenarTabla(1)">Título ↕️</th>
+                        <th onclick="ordenarTabla(2)">Autor ↕️</th>
+                        <th onclick="ordenarTabla(3)">Idioma ↕️</th>
+                        <th onclick="ordenarTabla(4)">Páginas ↕️</th>
+                        <th onclick="ordenarTabla(6)">Leído ↕️</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tbodyLibros"></tbody>
+            </table>
+        </div>
+
+        <div id="emptyState" class="empty-state">
+            <div class="empty-icon">📚</div>
+            <p>No hay libros que coincidan con la búsqueda.</p>
+        </div>
     </div>
 
-    <h1>Introducción</h1>
-    <p>Hola buenos días</p>
-    
+    <div class="form-overlay" id="formOverlay">
+        <div class="form-card">
+            <h2 id="formTitle">Añadir Libro</h2>
+            <div class="input-grid">
+                <div class="field"><label>Título</label><input type="text" id="nombreLibro"></div>
+                <div class="field"><label>Autor</label><input type="text" id="autorLibro"></div>
+                <div class="field"><label>Páginas</label><input type="number" id="paginasLibro"></div>
+                <div class="field"><label>Capítulos</label><input type="number" id="capitulosLibro"></div>
+                <div class="field"><label>Idioma</label>
+                    <select id="idiomaLibro">
+                        <option value="ES">Español</option>
+                        <option value="EN">Inglés</option>
+                        <option value="FR">Francés</option>
+                        <option value="DE">Alemán</option>
+                        <option value="OT">Otros</option>
+                    </select>
+                </div>
+                <div class="field"><label>Veces Leído</label><input type="number" id="vecesLeidoLibro" value="0"></div>
+            </div>
+            <div class="form-actions">
+                <button onclick="guardarLibro()" class="btn-save">💾 Guardar Libro</button>
+                <button onclick="ocultarFormulario()" class="btn-cancel">Cancelar</button>
+            </div>
+        </div>
+    </div>
 
     <script src="script.js"></script>
 </body>
